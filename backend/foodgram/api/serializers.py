@@ -1,6 +1,5 @@
 import webcolors
 from django.db import transaction
-from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
 from django.shortcuts import get_object_or_404
 from djoser.serializers import UserCreateSerializer, UserSerializer
@@ -10,9 +9,7 @@ from rest_framework.validators import ValidationError
 
 from recipes.models import (Favorite, Ingredient, IngredientsRecipe, Recipe,
                             ShoppingList, Tag)
-from users.models import Follow
-
-User = get_user_model()
+from users.models import Follow, User
 
 
 class Hex2NameColor(serializers.Field):

@@ -1,4 +1,3 @@
-from django.contrib.auth import get_user_model
 from django.db.models import Sum
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
@@ -9,7 +8,7 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from djoser.views import UserViewSet
 
-from users.models import Follow
+from users.models import Follow, User
 from .permissions import IsOwnerOrReadOnly
 from recipes.models import (Favorite, Ingredient, IngredientsRecipe, Recipe,
                             ShoppingList, Tag)
@@ -18,8 +17,6 @@ from .serializers import (FavoriteSerializer, FollowSerializer,
                           RecipeCreateSerializer, RecipeSerializer,
                           ShoppingListSerializer, TagSerializer,
                           UserCreateSerializer, UserSerializer)
-
-User = get_user_model()
 
 
 class CustomUserViewSet(UserViewSet):

@@ -29,7 +29,8 @@ INSTALLED_APPS = [
     'rest_framework.authtoken',
     'djoser',
     'django_filters',
-    'import_export'
+    'import_export',
+    'colorfield'
 ]
 
 MIDDLEWARE = [
@@ -96,7 +97,7 @@ USE_L10N = True
 
 USE_TZ = True
 
-AUTH_USER_MODEL = 'users.CustomUser'
+AUTH_USER_MODEL = 'users.User'
 
 
 STATIC_URL = '/static/'

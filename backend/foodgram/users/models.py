@@ -2,16 +2,14 @@ from django.contrib.auth.models import AbstractUser
 from django.db import models
 
 
-class CustomUser(AbstractUser):
-    username = models.CharField(max_length=150, unique=True)
-    first_name = models.CharField(max_length=150)
-    last_name = models.CharField(max_length=150)
-    email = models.EmailField(max_length=254, unique=True)
+class User(AbstractUser):
+
     password = models.CharField(max_length=150)
 
     class Meta:
         ordering = ['id']
         verbose_name = 'Пользователь'
+        verbose_name_plural = 'Пользователи'
 
     def __str__(self):
         return self.username
@@ -19,18 +17,21 @@ class CustomUser(AbstractUser):
 
 class Follow(models.Model):
     user = models.ForeignKey(
-        CustomUser,
+        User,
         on_delete=models.CASCADE,
+        verbose_name="Пользователь",
         related_name='follower',
     )
     author = models.ForeignKey(
-        CustomUser,
+        User,
         on_delete=models.CASCADE,
+        verbose_name="Автор",
         related_name='following',
     )
 
     class Meta:
-        verbose_name = 'Подпискb'
+        verbose_name = 'Подписка'
+        verbose_name_plural = 'Подписки'
         ordering = ('-id',)
         constraints = (
             models.UniqueConstraint(

@@ -3,7 +3,6 @@ from django.db import models
 from django.db.models import UniqueConstraint
 
 from colorfield.fields import ColorField
-
 from users.models import User
 
 
@@ -15,8 +14,8 @@ class Ingredient(models.Model):
     measurement_unit = models.CharField('Единица измерения', max_length=10)
 
     class Meta:
-        verbose_name = 'ингридиент'
-        verbose_name_plural = 'ингридиенты'
+        verbose_name = 'ингредиент'
+        verbose_name_plural = 'ингредиенты'
 
     def __str__(self):
         return self.name
@@ -59,7 +58,7 @@ class Recipe(models.Model):
         Ingredient,
         through='IngredientsRecipe',
         related_name='recipes',
-        verbose_name='список ингридиентов',
+        verbose_name='список ингредиентов',
     )
     tags = models.ManyToManyField(
         Tag,
@@ -82,7 +81,7 @@ class IngredientsRecipe(models.Model):
     ingredient = models.ForeignKey(
         Ingredient,
         on_delete=models.CASCADE,
-        verbose_name='список ингридиентов',
+        verbose_name='список ингредиентов',
         related_name='recipe_ingredients'
     )
     recipe = models.ForeignKey(

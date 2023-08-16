@@ -1,1 +1,4 @@
-# praktikum_new_diplom
+сайт: https://thebestfoodgram.hopto.org/
+
+супер пользователь: superuser
+пароль: superuser

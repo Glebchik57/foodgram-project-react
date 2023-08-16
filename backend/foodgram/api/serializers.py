@@ -31,6 +31,8 @@ class UserCreateSerializer(UserCreateSerializer):
         fields = (
             *User.REQUIRED_FIELDS,
             User.USERNAME_FIELD,
+            'first_name',
+            'last_name',
             'password',
         )
 
@@ -53,7 +55,7 @@ class UserSerializer(UserSerializer):
         user = self.context['request'].user
         if user.is_anonymous:
             return False
-        return Follow.objects.filter(user=user).exists()
+        return Follow.objects.filter(user=user, author=obj).exists()
 
 
 class PasswordSerializer(serializers.Serializer):
@@ -73,7 +75,6 @@ class PasswordSerializer(serializers.Serializer):
 
 
 class TagSerializer(serializers.ModelSerializer):
-    color = Hex2NameColor()
 
     class Meta:
         model = Tag
@@ -88,11 +89,12 @@ class IngredientSerializer(serializers.ModelSerializer):
 
 
 class IngredientsRecipeSerializer(serializers.ModelSerializer):
+    name = serializers.ReadOnlyField(source='ingredient.name')
     id = serializers.PrimaryKeyRelatedField(queryset=Ingredient.objects.all())
 
     class Meta:
         model = IngredientsRecipe
-        fields = ('id', 'amount',)
+        fields = ('id', 'name', 'amount',)
 
 
 class RecipeSerializer(serializers.ModelSerializer):
@@ -214,7 +216,7 @@ class RecipeShortShowSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Recipe
-        fields = ('id', 'name', 'image', 'cooking_time',)
+        fields = ('id', 'author', 'name', 'image', 'cooking_time',)
 
 
 class FavoriteSerializer(serializers.ModelSerializer):

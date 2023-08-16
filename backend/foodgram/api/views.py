@@ -1,12 +1,12 @@
 from django.db.models import Sum
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
-from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from djoser.views import UserViewSet
+from django_filters.rest_framework import DjangoFilterBackend
 
 from users.models import Follow, User
 from .permissions import IsOwnerOrReadOnly
@@ -17,12 +17,13 @@ from .serializers import (FavoriteSerializer, FollowSerializer,
                           RecipeCreateSerializer, RecipeSerializer,
                           ShoppingListSerializer, TagSerializer,
                           UserCreateSerializer, UserSerializer)
+from .filters import RecipeFilter
 
 
 class CustomUserViewSet(UserViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
-    permission_classes = [AllowAny]
+    permission_classes = (AllowAny,)
 
     def get_serializer_class(self):
         if self.action == "create":
@@ -107,19 +108,23 @@ class CustomUserViewSet(UserViewSet):
 class IngredientViewSet(viewsets.ModelViewSet):
     queryset = Ingredient.objects.all()
     serializer_class = IngredientSerializer
+    permission_classes = (AllowAny,)
+    pagination_class = None
 
 
 class TagViewSet(viewsets.ModelViewSet):
     queryset = Tag.objects.all()
     serializer_class = TagSerializer
+    permission_classes = (AllowAny,)
+    pagination_class = None
 
 
 class RecipeViewSet(viewsets.ModelViewSet):
     queryset = Recipe.objects.all()
     serializer_class = RecipeSerializer
     permission_classes = (IsOwnerOrReadOnly,)
-    filter_backends = [DjangoFilterBackend]
-    filterset_fields = ['tags']
+    filter_backends = (DjangoFilterBackend,)
+    filterset_class = RecipeFilter
 
     def perform_create(self, serializer):
         serializer.save(author=self.request.user)

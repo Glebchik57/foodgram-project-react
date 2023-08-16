@@ -1,18 +1,14 @@
 import os
 
-from dotenv import load_dotenv
-
-load_dotenv()
-
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
 SECRET_KEY = os.getenv('SECRET_KEY')
 
 
-DEBUG = True
+DEBUG = False
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['158.160.72.187', '127.0.0.1', 'localhost', 'thebestfoodgram.hopto.org']
 
 
 INSTALLED_APPS = [
@@ -65,8 +61,12 @@ WSGI_APPLICATION = 'foodgram.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': os.getenv('POSTGRES_DB', 'django'),
+        'USER': os.getenv('POSTGRES_USER', 'django'),
+        'PASSWORD': os.getenv('POSTGRES_PASSWORD', ''),
+        'HOST': os.getenv('DB_HOST', ''),
+        'PORT': os.getenv('DB_PORT', 5432)
     }
 }
 
@@ -117,7 +117,7 @@ REST_FRAMEWORK = {
     'DEFAULT_FILTER_BACKENDS': [
         'django_filters.rest_framework.DjangoFilterBackend'
     ],
-    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.LimitOffsetPagination',
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 6,
 }
 
@@ -133,4 +133,5 @@ DJOSER = {
         'user_list': ['rest_framework.permissions.IsAuthenticatedOrReadOnly'],
     },
     'HIDE_USERS': False,
+    "LOGIN_FIELD": "email",
 }

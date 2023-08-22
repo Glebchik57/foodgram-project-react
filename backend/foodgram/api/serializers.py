@@ -1,10 +1,9 @@
 import webcolors
 from django.db import transaction
 from django.contrib.auth.password_validation import validate_password
-from django.shortcuts import get_object_or_404
 from djoser.serializers import UserCreateSerializer, UserSerializer
 from drf_extra_fields.fields import Base64ImageField
-from rest_framework import serializers, status
+from rest_framework import serializers
 from rest_framework.validators import ValidationError
 
 from recipes.models import (Favorite, Ingredient, IngredientsRecipe, Recipe,
@@ -75,6 +74,7 @@ class PasswordSerializer(serializers.Serializer):
 
 
 class TagSerializer(serializers.ModelSerializer):
+    color = Hex2NameColor()
 
     class Meta:
         model = Tag
@@ -101,8 +101,8 @@ class RecipeSerializer(serializers.ModelSerializer):
     author = UserSerializer(read_only=True)
     ingredients = serializers.SerializerMethodField()
     tags = TagSerializer(many=True)
-    is_in_shopping_list = serializers.SerializerMethodField()
-    is_favorited = serializers.SerializerMethodField()
+    is_in_shopping_cart = serializers.SerializerMethodField(read_only=True)
+    is_favorited = serializers.SerializerMethodField(read_only=True)
     image = Base64ImageField()
 
     class Meta:
@@ -113,24 +113,24 @@ class RecipeSerializer(serializers.ModelSerializer):
             "author",
             "ingredients",
             "is_favorited",
-            "is_in_shopping_list",
+            "is_in_shopping_cart",
             "name",
             "image",
             "text",
             "cooking_time",
         )
 
-    def get_is_in_shopping_list(self, obj):
-        user = self.context.get("request").user
-        if user.is_authenticated:
-            return ShoppingList.objects.filter(user=user, recipe=obj).exists()
-        return False
-
     def get_is_favorited(self, obj):
-        user = self.context.get("request").user
-        if user.is_authenticated or self.context.get("request") is not None:
-            return Favorite.objects.filter(user=user, recipe=obj).exists()
-        return False
+        user = self.context.get('request').user
+        if user.is_anonymous:
+            return False
+        return user.favorites.filter(recipe=obj).exists()
+
+    def get_is_in_shopping_cart(self, obj):
+        user = self.context.get('request').user
+        if user.is_anonymous:
+            return False
+        return user.shopping_list.filter(recipe=obj).exists()
 
     @staticmethod
     def get_ingredients(obj):
@@ -197,13 +197,13 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
         return recipe
 
     @transaction.atomic
-    def update(self, recipe, validated_data):
-        ingredients = validated_data.pop("ingredients")
-        tags = validated_data.pop("tags")
-        IngredientsRecipe.objects.filter(recipe=recipe).delete()
-        self.create_ingredients(ingredients, recipe)
-        recipe.tags.set(tags)
-        return super().update(recipe, validated_data)
+    def update(self, instance, validated_data):
+        tags = validated_data.pop('tags')
+        ingredients = validated_data.pop('ingredients')
+        IngredientsRecipe.objects.filter(recipe=instance).delete()
+        instance.tags.set(tags)
+        self.create_ingredients(ingredients, instance)
+        return super().update(instance, validated_data)
 
     def to_representation(self, recipe):
         data = RecipeSerializer(
@@ -227,17 +227,16 @@ class FavoriteSerializer(serializers.ModelSerializer):
 
     def validate(self, data):
         user = data['user']
-        if user.favorite.filter(recipe=data['recipe']).exists():
+        recipe = data['recipe']
+        if self.Meta.model.objects.filter(user=user, recipe=recipe).exists():
             raise ValidationError(
-                'Рецепт уже в избранном'
+                {'error': 'рецепт уже в избранном'}
             )
         return data
 
     def representation(self, instance):
-        return RecipeShortShowSerializer(
-            instance.recipe,
-            context={'request': self.context.get('request')},
-        ).data
+        context = {'request': self.context.get('request')}
+        return RecipeShortShowSerializer(instance.recipe, context=context).data
 
 
 class ShoppingListSerializer(serializers.ModelSerializer):
@@ -248,17 +247,16 @@ class ShoppingListSerializer(serializers.ModelSerializer):
 
     def validate(self, data):
         user = data['user']
-        if user.shopping_list.filter(recipe=data['recipe']).exists():
+        recipe = data['recipe']
+        if user.shopping_list.filter(recipe=recipe).exists():
             raise ValidationError(
                 'Рецепт уже есть в списке покупок'
             )
         return data
 
     def representation(self, instance):
-        return RecipeShortShowSerializer(
-            instance.recipe,
-            context={'request': self.context.get('request')},
-        ).data
+        context = {'request': self.context.get('request')}
+        return RecipeShortShowSerializer(instance.recipe, context=context).data
 
 
 class FollowSerializer(serializers.ModelSerializer):
@@ -267,34 +265,16 @@ class FollowSerializer(serializers.ModelSerializer):
     is_subscribed = serializers.BooleanField(default=True)
 
     def get_recipes(self, obj):
-        recipes = obj.recipes.all()
-        serializer = RecipeShortShowSerializer(
-            recipes,
-            many=True,
-            context=self.context
-        )
-        return serializer.data
-
-    def validate(self, data):
-        author_id = (
-            self.context.get('request').parser_context.get('kwargs').get('id')
-        )
-        author = get_object_or_404(User, id=author_id)
-        user = self.context.get('request').user
-
-        if user.follower.filter(author=author).exists():
-            raise ValidationError(
-                detail='Вы уже подписанны',
-                code=status.HTTP_400_BAD_REQUEST,
-            )
-
-        if user == author:
-            raise ValidationError(
-                detail='Нельзя подписаться на самого себя',
-                code=status.HTTP_400_BAD_REQUEST,
-            )
-
-        return data
+        request = self.context.get('request')
+        if not request or request.user.is_anonymous:
+            return False
+        recipes = Recipe.objects.filter(author=obj)
+        limit = request.query_params.get('recipes_limit')
+        if limit:
+            recipes = recipes[:int(limit)]
+        return RecipeShortShowSerializer(
+            recipes[:3], many=True, context={'request': request}
+        ).data
 
     def get_recipes_count(self, obj):
         return obj.recipes.count()

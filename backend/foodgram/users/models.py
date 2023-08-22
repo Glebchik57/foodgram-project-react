@@ -1,5 +1,6 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
+from rest_framework.exceptions import ValidationError
 
 
 class User(AbstractUser):
@@ -28,6 +29,11 @@ class Follow(models.Model):
         verbose_name="Автор",
         related_name='following',
     )
+
+    def save(self, **kwargs):
+        if self.user == self.author:
+            raise ValidationError("Невозможно подписаться на себя")
+        super().save()
 
     class Meta:
         verbose_name = 'Подписка'

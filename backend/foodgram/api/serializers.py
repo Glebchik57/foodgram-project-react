@@ -90,7 +90,10 @@ class IngredientSerializer(serializers.ModelSerializer):
 
 class IngredientsRecipeSerializer(serializers.ModelSerializer):
     name = serializers.ReadOnlyField(source='ingredient.name')
-    id = serializers.PrimaryKeyRelatedField(queryset=Ingredient.objects.all())
+    id = serializers.PrimaryKeyRelatedField(
+        source='ingredient',
+        queryset=Ingredient.objects.all()
+    )
 
     class Meta:
         model = IngredientsRecipe
@@ -166,8 +169,8 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
         IngredientsRecipe.objects.bulk_create(
             IngredientsRecipe(
                 recipe=recipe,
-                ingredient=ingredient["id"],
-                amount=ingredient["amount"]
+                amount=ingredient['amount'],
+                ingredient=ingredient['ingredient'],
             )
             for ingredient in ingredients
         )
